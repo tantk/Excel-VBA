@@ -1,0 +1,28 @@
+Public Sub SaveAttachmentsfromAllMSGfile()
+    Dim Item As MailItem
+    Dim Atmt As Attachment
+    Dim FileName As String
+    Dim i As Integer
+    Dim MyFile, MyPath, MyName As String
+    'path has to be changed
+    MyPath = "C:\Users\ttk\Desktop\Email sent"
+    'can manipulate wildcard based on search term
+    MyName = "*.msg"
+    MyFile = Dir(MyPath & "\" & "*.msg")
+Do While MyFile <> ""
+    Set MyItem = Application.CreateItemFromTemplate(MyPath & "\" & MyFile)
+    For Each Atmt In MyItem.Attachments
+            'all attachments are first saved in the temp folder C:\Temp by default.  Be sure to create this folder first.
+            FileName = MyPath & "\" & Atmt.FileName
+            Atmt.SaveAsFile FileName
+    Next
+MyFile = Dir()
+
+
+Loop
+        
+        
+
+
+
+End Sub
