@@ -1,0 +1,70 @@
+Public Declare PtrSafe Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
+ByVal hwnd As Long, _
+ByVal lpOperation As String, _
+ByVal lpFile As String, _
+ByVal lpParameters As String, _
+ByVal lpDirectory As String, _
+ByVal nShowCmd As Long) As Long
+Public Function PrintThisDoc(formname As Long, FileName As String)
+On Error Resume Next
+Dim X As Long
+X = ShellExecute(formname, "Print", FileName, 0&, 0&, 3)
+End Function
+ 
+Sub Copy_Certain_Files_In_Folder()
+'This example copy all Excel files from FromPath to ToPath.
+'Note: If the files in ToPath already exist it will overwrite
+'existing files in this folder
+    Dim FSO As Object
+    Dim FromPath As String
+    Dim ToPath As String
+    Dim FileExt As String
+    Dim strDir As String
+    Dim strFile As String
+    Dim SearchTerm As String
+    Dim X As Integer
+    Set FSO = CreateObject("scripting.filesystemobject")
+    FromPath = Cells(1, 5) '<< Change
+    ToPath = Cells(2, 5) '<< Change
+If Right(FromPath, 1) <> "\" Then
+        FromPath = FromPath & "\"
+End If
+    FileExt = "*.*"  '<< Change
+    'You can use *.* for all files or *.doc for Word files
+
+   SearchTerm = Cells(2, 1)
+
+    
+
+X = 0
+    SearchTerm = Cells(2 + X, 1)
+Do While SearchTerm <> ""
+    FileName = Dir(FromPath & "*" & SearchTerm & "*" & FileExt)
+Do While FileName <> ""
+
+If FSO.FolderExists(FromPath) = False Then
+        MsgBox FromPath & " doesn't exist"
+        Exit Sub
+End If
+
+If FSO.FolderExists(ToPath) = False Then
+        MsgBox ToPath & " doesn't exist"
+        Exit Sub
+End If
+
+   
+
+        
+    
+         FSO.CopyFile Source:=FromPath & FileName & FileExt, Destination:=ToPath
+
+    
+FileName = Dir()
+Loop
+X = X + 1
+SearchTerm = Cells(2 + X, 1)
+Loop
+
+
+    MsgBox "You can find the files from " & FromPath & " in " & ToPath
+End Sub
