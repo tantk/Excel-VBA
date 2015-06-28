@@ -1,0 +1,373 @@
+Function FileExist(FilePath As String) As Boolean
+'PURPOSE: Test to see if a file exists or not
+'SOURCE: www.TheSpreadsheetGuru.com/The-Code-Vault
+'RESOURCE: http://www.rondebruin.nl/win/s9/win003.htm
+
+Dim TestStr As String
+
+'Test File Path (ie "C:\Users\Chris\Desktop\Test\book1.xlsm")
+  On Error Resume Next
+    TestStr = Dir(FilePath & ".xl*")
+  On Error GoTo 0
+
+'Determine if File exists
+  If TestStr = "" Then
+    FileExist = False
+  Else
+    FileExist = True
+  End If
+
+End Function
+
+
+
+
+Sub PaymentBlockFormat()
+
+'
+' format Macro
+'
+
+'On Error GoTo MyBAD
+Dim test As String
+Dim LastRow As Long
+Dim TotalAmt As Integer
+Dim LastEntry As Integer
+If Cells(1, 1) = "Payment Method" And Cells(1, 2) = "Amount in doc. curr." And Cells(1, 3) = "Document currency" And Cells(1, 4) = "Amount in local currency" And Cells(1, 5) = "Local Currency" Then
+
+LastEntry = 5
+ActiveSheet.DisplayPageBreaks = False
+    Rows("1:3").Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    Cells(1, 1) = "Payment Instruction List"
+    Dim DueDate As String
+    
+    DueDate = Cells(5, 7)
+    DueDate = format(DueDate, "dd/mm/yyyy")
+    MsgBox "If there is a cross over of payment item for different month, (especially if today is near month end) pls ask finance if you can release payment first. (it will cause problem for finance if there are items from different month being 'released for payment' at the same time"
+    
+    Cells(2, 1) = "Due date : " & DueDate
+    Columns("A:A").ColumnWidth = 3
+    Range("B:B,D1,D:D").ColumnWidth = 15
+    Range("C:C,E:E").ColumnWidth = 5
+    Range("F:F,G:G,H:H,I:I").ColumnWidth = 12
+    Range("J:J,K:K").ColumnWidth = 20
+    Range("J:J,K:K").WrapText = True
+    Columns("L:L").ColumnWidth = 20
+    Columns("M:M").ColumnWidth = 15
+    Columns("N:N").ColumnWidth = 15
+    Columns("O:P").ColumnWidth = 3
+    Range("B:B,D:D").NumberFormat = "0.00_);[Red](0.00)"
+    Range("B:B,D:D").Style = "Comma"
+    Range("B:B,D:D").NumberFormat = "#,##0.00_);[Red](#,##0.00)"
+    Range("M:N").WrapText = True
+
+'bold and underline first 2 item
+    Range("A1,A2").Font.Bold = True
+    Range("A1,A2").Font.Underline = xlUnderlineStyleSingle
+'finding last row
+
+    LastRow = Cells(Rows.Count, "C").End(xlUp).Row
+
+        Range("O4").Select
+    ActiveCell.FormulaR1C1 = "Tax"
+    Range("P4").Select
+    ActiveCell.FormulaR1C1 = "PB"
+Range("A4:Q4").Select
+    With Selection.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .Color = 15773696
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+''margin 0,a3,footer,landscape
+Application.PrintCommunication = False
+
+    With ActiveSheet.PageSetup
+        .FitToPagesWide = 1
+        .FitToPagesTall = False
+        .PrintTitleRows = "$4:$4"
+        .Orientation = xlLandscape
+        .PaperSize = xlPaperA3
+    End With
+    
+Application.PrintCommunication = True
+
+    With ActiveSheet.PageSetup
+        .LeftFooter = "&F"
+        .RightFooter = " Page &P of &N "
+    End With
+    
+    While Cells(LastEntry, 2).Interior.Pattern = xlNone
+        If Cells(LastEntry, 8) > Now() Then
+    Cells(LastEntry, 8).Select
+  'if posting date later than today, CFO ECC wont be able to see this entry, so i highlight it , he will do some adjustment in ECC to allow himself to see the entry
+        With Selection.Font
+        .Color = -16776961
+        .TintAndShade = 0
+        End With
+        End If
+    LastEntry = LastEntry + 1
+    Wend
+    LastEntry = LastEntry - 1
+    
+    Rows("5:" & LastEntry).Select
+    With Selection.Borders(xlInsideHorizontal)
+    .LineStyle = xlContinuous
+    .ThemeColor = 1
+    .TintAndShade = -0.249946592608417
+    .Weight = xlThin
+    End With
+TotalAmt = LastEntry + 1
+'total up doc in UD7
+
+
+Dim FirstItemRow As Integer, FirstItemCol As Integer, LastItemRow As Integer, LastItemCol As Integer, FirstTotalAmt As Integer
+FirstItemRow = 5
+FirstItemCol = 2
+LastItemRow = LastEntry
+LastItemCol = 2
+FirstTotalAmt = TotalAmt
+Cells(TotalAmt, 4).Formula = "=sum(" & Cells(FirstItemRow, FirstItemCol + 2).Address(0, 0) & ":" & _
+Cells(LastItemRow, LastItemCol + 2).Address(0, 0) & ")"
+
+While Cells(TotalAmt, 2) <> ""
+
+
+'total up doc in doc currency
+
+'lazy to create another variable, the currency references will be just firstitemcol +1, since currency column should be on the right side of it
+
+Cells(TotalAmt, 2).Formula = "=sumifs(" & Cells(FirstItemRow, FirstItemCol).Address(0, 0) & ":" & _
+Cells(LastItemRow, LastItemCol).Address(0, 0) & "," _
+& Cells(FirstItemRow, FirstItemCol + 1).Address(0, 0) & ":" & Cells(LastItemRow, LastItemCol + 1).Address(0, 0) & "," & Chr(34) & Cells(TotalAmt, 3) & Chr(34) & ")"
+TotalAmt = TotalAmt + 1
+Wend
+'making row 5 to last row minus 2 height 50
+    Rows("5:" & LastItemRow).Select
+    Selection.RowHeight = 50
+'bolding the last 2 rows
+    Rows(FirstTotalAmt & ":" & TotalAmt).Font.Bold = True
+    
+'tallying same inv with same docu header
+
+Dim InvoiceStart As Integer, sum As Double, SameInvoiceCounter As Integer, Invoice As Integer, ShapeLocation As Range, L As Long, T As Long
+Dim W As Long, H As Long, HBox As Long, NumberInTextBox As String
+HBox = 20
+
+
+For Invoice = 5 To LastItemRow
+InvoiceStart = Invoice
+SameInvoiceCounter = Invoice
+sum = 0
+Do While Cells(SameInvoiceCounter, 14) = Cells(SameInvoiceCounter + 1, 14)
+SameInvoiceCounter = SameInvoiceCounter + 1
+Invoice = SameInvoiceCounter
+sum = Application.sum(Range(Cells(InvoiceStart, 2), Cells(Invoice, 2)))
+Loop
+
+If Invoice - InvoiceStart > 0 Then
+    Set ShapeLocation = Range(Cells(InvoiceStart, 2), Cells(Invoice, 2))
+    L = ShapeLocation.Left
+    T = ShapeLocation.Top
+    W = ShapeLocation.Width
+    H = ShapeLocation.Height
+'values like 66 and 50 needs to be adjusted if there is any adjustment to column width
+Set RightBrace = ActiveSheet.Shapes.AddShape(msoShapeRightBrace, L + 66, T, W - 50, H)
+RightBrace.Adjustments.Item(2) = 1 - (0.5 / (Invoice - InvoiceStart + 1))
+
+Set TextBox = ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, L + 100, 12.5 + (T + 50 * (Invoice - InvoiceStart)), W + 10, HBox)
+
+
+NumberInTextBox = format(sum, "#,##0.00;[Red](#,##0.00)")
+With TextBox
+.TextFrame.Characters.Text = NumberInTextBox
+.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 0, 0)
+.TextFrame2.TextRange.Font.Bold = msoTrue
+End With
+
+End If
+Next
+ActiveSheet.PageSetup.PrintArea = Range(Cells(1, 1), Cells(TotalAmt, 17)).Address
+'saving file
+
+Dim FolderPath As String
+Dim VariablePath As String
+Dim SaveName As String
+Dim PartNumber As String
+Dim VersionExt As String
+Dim Saved As Boolean
+Dim Year1 As String, month1 As String, day1 As String, FYyear As String, MonthLong As String, MonthShort As String
+Dim PeriodCounter As Integer
+PartNumber = 1
+  VersionExt = " - "
+Dim Response As Integer, Response2 As Integer, Response3 As Integer
+FolderPath = "Y:\METS-Final\CFO_Unit\7.Share\"
+Year1 = Year(DueDate)
+month1 = month(DueDate)
+day1 = day(DueDate)
+If month1 > 3 Then
+PeriodCounter = month1 - 3
+Else
+PeriodCounter = month1 + 9
+End If
+If month1 > 3 Then
+FYyear = Year1 + 1
+Else
+FYyear = Year1
+End If
+
+FYyear = "PB Release - FY" & FYyear
+MonthLong = MonthName(month1, False)
+MonthShort = MonthName(month1, True)
+VariablePath = FYyear & "\" & PeriodCounter & "." & MonthShort & " " & Year1 & "\"
+
+myfilename = "PB Release - Due " & day1 & " " & MonthShort & " " & Year1 & VersionExt
+'check if file exist
+
+Response = MsgBox(prompt:="Do you want to save file??", Buttons:=vbYesNo)
+
+      If Response = vbYes Then
+      
+        Do While Saved = False
+            If FileExist(FolderPath & VariablePath & myfilename & PartNumber) = False Then
+    
+            Response2 = MsgBox(prompt:="Is it okay to save file as " & FolderPath & VariablePath & myfilename & PartNumber & ".xlsx ?", Buttons:=vbYesNo)
+    
+                If Response2 = vbYes Then
+                    ActiveWorkbook.SaveAs Filename:=FolderPath & VariablePath & myfilename & PartNumber & ".xlsx", FileFormat:= _
+                    xlOpenXMLWorkbook, Password:="", WriteResPassword:="", ReadOnlyRecommended:=False _
+                    , CreateBackup:=False
+                    MsgBox "Saved file as " & FolderPath & VariablePath & myfilename & PartNumber
+                    Saved = True
+                Else
+                MsgBox "You selected 'No'.File will not be saved, pls save manually if needed."
+                Exit Do
+            
+                End If
+    
+            Else
+            PartNumber = PartNumber + 1
+            End If
+        Loop
+      
+     
+      Else
+         ' The no button was selected.
+         MsgBox "You selected 'No'.File will not be saved, pls save manually if needed."
+    End If
+
+Response3 = MsgBox(prompt:="print?", Buttons:=vbYesNo)
+If Response3 = vbYes Then
+ActiveSheet.PrintOut
+Else
+ MsgBox "You selected 'No'. Pls print manually if needed."
+End If
+
+
+Else
+MsgBox "Wrong Payment Block format detected,will not run macro. proper format: A1=Payment Method,A2=Amount in doc. curr.,A3=Document currency,A4=Amount in local currency,A5=Local Currency, ..."
+
+End If
+ 
+
+      ' If statement to check if the yes button was selected.
+
+MyBAD:
+
+      ' If an error occurs, display a message and end the macro.
+'      MsgBox "My friend, error occurs for many different reason." & vbNewLine _
+ '     & Chr(149) & "one : save location has not been created." & vbNewLine _
+  '    & Chr(149) & "two : document header has been been filled up completely." & vbNewLine _
+   '    & Chr(149) & "three : the last line of the payment block release is not highlighted ." & vbNewLine _
+    '   & Chr(149) & "four : G5's is not due date?" & vbNewLine _
+     '  & Chr(149) & "and many other reason...."
+
+
+
+
+
+
+End Sub
+
+
+
+
+
+
+
+
+Sub EmailToFinance()
+'For Tips see: http://www.rondebruin.nl/win/winmail/Outlook/tips.htm
+'Working in Excel 2000-2013
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Dim strbody As String
+    Dim SubjectTitle As String, SubjectRaw As String
+    
+    If ActiveWorkbook.Path <> "" Then
+        Set OutApp = CreateObject("Outlook.Application")
+        Set OutMail = OutApp.CreateItem(0)
+
+Dim SenderName As String
+SubjectRaw = ActiveWorkbook.Name
+SenderName = (Environ$("Username"))
+Select Case SenderName
+   Case "F4375"
+       SenderName = "****"
+   Case "86329"
+      SenderName = "***"
+   Case "F5339"
+      SenderName = "**"
+   Case "F2878"
+     SenderName = "*"
+    Case "E6072"
+     SenderName = "*"
+    Case "E9408"
+     SenderName = "****"
+    Case "E7918"
+     SenderName = "****"
+    Case "E9691"
+     SenderName = "****"
+    Case "F1839"
+    SenderName = "****"
+    Case Else
+    SenderName = ""
+     
+   End Select
+
+SubjectTitle = Replace((Left(SubjectRaw, InStrRev(SubjectRaw, ".") - 1) & ")"), "PB Release - ", "Payment Item (")
+
+
+
+
+        strbody = "<font size=""3"" face=""Calibri"">" & _
+                  "Dear Finance,<br><br>" & _
+                  "Please find the list " & _
+                  "<A HREF=""file://" & ActiveWorkbook.FullName & _
+                  """>here</A>" & _
+                  "<br><br>Regards," & _
+                  "<br> " & SenderName & _
+                  "<br>Accounting Dept.</font>"
+
+        On Error Resume Next
+        With OutMail
+            .To = "Finance***@***.com"
+            .CC = "Account**@***.com"
+            .BCC = ""
+            If InStr(SubjectTitle, "Payment Item") > 0 Then
+            .Subject = SubjectTitle
+            Else
+            .Subject = ActiveWorkbook.Name
+            End If
+            .HTMLBody = strbody
+            .Display   'or use .Send
+        End With
+        On Error GoTo 0
+
+        Set OutMail = Nothing
+        Set OutApp = Nothing
+    Else
+        MsgBox "The ActiveWorkbook does not have a path, Save the file first."
+    End If
+End Sub
