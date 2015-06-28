@@ -1,0 +1,342 @@
+Sub GenerateLetter()
+
+    Dim CurrentSheet As Worksheet
+    Dim CounterParty As Integer
+    Dim CounterPartyName As String
+    Dim count As Integer
+    Dim LineStartCounterParty As Integer
+    Set CurrentSheet = ActiveWorkbook.Sheets("Generating Letter")
+    Dim LetterTemplate As Workbook
+    Dim LetterTemplateFileLocation As String
+    Dim TempData As Variant
+    Dim ExtraLinesToInsert As Integer
+    Dim OutStandingFileLocation As String
+    Dim SaveLocation As String
+    
+    'Define filelocation in cell C3
+    ActiveWorkbook.Sheets("Generating Letter").Select
+    LetterTemplateFileLocation = Cells(3, 3)
+    OutStandingFileLocation = Cells(4, 3)
+    SaveLocation = Cells(5, 3)
+    Set OutStandingFile = Workbooks.Open(OutStandingFileLocation)
+    'active wb -> outstanding file, Find Last row in column C
+    Dim LastRow As Long
+    With ActiveSheet
+        LastRow = .Cells(.Rows.count, "C").End(xlUp).Row
+    End With
+
+    For i = 4 To LastRow
+    'The Start of For Loop, starting from line 4 ,as long as Col C isnt blank, it will do the following until the line "NEXT"
+        If Cells(i, 3) <> "" Then
+            CounterParty = CounterParty + 1
+            LineStartCounterParty = i
+            CounterPartyName = Cells(i, 3)
+            count = i
+    'the check for same counterparty name from next line, it has the same name, it will move 1 line down
+            Do While Cells(count, 3) = Cells(count + 1, 3)
+    'Just in case,hard break for While loop
+                If count >= 16384 Then
+                    Exit Do
+                End If
+                'move one line down
+                count = count + 1
+                'record how many lines down
+                i = count
+            Loop
+    'save appropriate data table from the referred workbook as "tempdata"
+    OutStandingFile.Sheets("PHYSICAL").Select
+            TempData = OutStandingFile.Sheets("PHYSICAL").Range(Cells(LineStartCounterParty, 7), Cells(i, 19)).Value
+    'open lettertemplate file
+            Set LetterTemplate = Workbooks.Open(LetterTemplateFileLocation)
+    'fill in counter party name on lettertemplate
+            LetterTemplate.Sheets("letter(letter2)").Cells(16, 4) = CounterPartyName
+    'calc the number of rows to insert (default no. of rows on template is 2)
+            ExtraLinesToInsert = i - LineStartCounterParty
+    'insert rows if there are more than 2 item
+            If ExtraLinesToInsert >= 2 Then
+                Sheets("list (letter3)").Rows("19:" & 19 + ExtraLinesToInsert - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+            End If
+            If ExtraLinesToInsert = 0 Then
+                Rows("19:19").Delete Shift:=xlUp
+            End If
+    'fill in the appropriate table with "tempdata"
+    Sheets("list (letter3)").Select
+            Sheets("list (letter3)").Range(Cells(18, 1), Cells(18 + i - LineStartCounterParty, 13)).Value = TempData
+    'FORMAT DATES
+            Sheets("list (letter3)").Range(Cells(18, 9), Cells(18 + i - LineStartCounterParty, 10)).NumberFormat = "dd/mm/yyyy"
+            Sheets("list (letter3)").Range(Cells(18, 11), Cells(18 + i - LineStartCounterParty, 11)).NumberFormat = "mmm yyyy"
+            
+    'hide sheet~
+    
+    'Saving file...
+            ActiveWorkbook.SaveAs fileName:=SaveLocation & "\" & CounterPartyName & ".xlsx", FileFormat:= _
+            xlOpenXMLWorkbook, Password:="", WriteResPassword:="", ReadOnlyRecommended:=False _
+            , CreateBackup:=False
+              
+            ActiveWorkbook.Close
+            
+        
+         
+
+            
+        
+        End If
+      
+    'The "NEXT" line; end of For Loop
+    Next
+    '(for checking purpose only)
+        MsgBox ("Run finish. " & CounterParty & " workbook created.")
+
+End Sub
+Sub Printing()
+
+
+Set CurrentBook = ActiveWorkbook
+Set CurrentSheet = ActiveWorkbook.Sheets("Printing")
+Dim directory As String, fileName As String, sheet As Worksheet, i As Integer, j As Integer, wks As Worksheet
+
+
+directory = Cells(5, 3)
+
+fileName = Dir(directory & "\" & "*.xl?")
+Dim LastFileName As String
+
+Do While fileName <> ""
+
+
+    i = i + 1
+
+
+    Workbooks.Open (directory & "\" & fileName)
+
+    For Each wks In Workbooks(fileName).Worksheets
+    
+        If wks.Visible = xlSheetVisible Then
+      
+            
+            For x = 1 To (wks.HPageBreaks.count + 1) * (wks.VPageBreaks.count + 1)
+            j = j + 1
+            CurrentBook.Sheets("Work Done").Cells(j + 2, 6) = ActiveWorkbook.Name & "," & wks.Name
+            CurrentBook.Sheets("Work Done").Cells(j + 2, 7) = j
+            CurrentBook.Sheets("Work Done").Cells(j + 2, 8) = Now()
+            
+            Next
+        End If
+    Next
+'printing
+ActiveWorkbook.PrintOut Copies:=1, Collate:=True, IgnorePrintAreas:=False
+
+
+    Application.DisplayAlerts = False
+     Workbooks(fileName).Close
+    Application.DisplayAlerts = True
+
+   
+    
+    fileName = Dir()
+
+    
+Loop
+End Sub
+Sub CombineAndConvertThePDF()
+'adobe reference library needed
+
+Set CurrentBook = ActiveWorkbook
+Set CurrentSheet = ActiveWorkbook.Sheets("Printing")
+Dim ScanDirectory As String, fileName As String, sheet As Worksheet, wks As Worksheet
+Dim ExcelDirectory As String, OutputDirectory As String
+
+
+Scanfile = Cells(5, 3)
+ExcelDirectory = Cells(6, 3)
+OutputDirectory = Cells(7, 3)
+
+fileName = Dir(ExcelDirectory & "\" & "*.xl?")
+Dim LastFileName As String
+
+Do While fileName <> ""
+
+
+ 
+
+
+    Workbooks.Open (ExcelDirectory & "\" & fileName)
+
+
+Sheets("letter(letter2)").Visible = True
+Sheets("letter(letter2)").Name = "test"
+Set WS = Worksheets("test")
+Set WS = Worksheets.Add(Before:=Worksheets(1))
+    Range("A1").Select
+    ActiveSheet.Pictures.Insert(Scanfile).Select
+
+
+
+
+ActiveSheet.DisplayPageBreaks = False
+Application.PrintCommunication = False
+With ActiveSheet.PageSetup
+.FitToPagesWide = 1
+.FitToPagesTall = False
+End With
+Application.PrintCommunication = True
+Sheets("test").Visible = False
+ Dim myArray() As Variant
+    Dim i As Integer
+    Dim j As Integer
+    j = 0
+    For i = 1 To Sheets.count
+        If Sheets(i).Visible = True Then
+            ReDim Preserve myArray(j)
+            myArray(j) = i
+            j = j + 1
+        End If
+    Next i
+    Sheets(myArray).Select
+Dim savename As String
+Dim FindingPosition As Integer
+savename = fileName
+FindingPosition = InStr(savename, ".xlsx")
+savename = Left(savename, FindingPosition - 1)
+
+
+
+  
+    ActiveSheet.ExportAsFixedFormat _
+        Type:=xlTypePDF, _
+        fileName:=OutputDirectory & "\" & savename, _
+        Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, _
+        IgnorePrintAreas:=False, _
+        OpenAfterPublish:=False
+
+
+
+
+
+    Application.DisplayAlerts = False
+     Workbooks(fileName).Close
+    Application.DisplayAlerts = True
+
+   
+    
+    fileName = Dir()
+
+    
+Loop
+End Sub
+
+
+Sub EmailMacro()
+'Working in Excel 2000-2013
+'For Tips see: http://www.rondebruin.nl/win/winmail/Outlook/tips.htm
+'rmb to add reference library for outlook
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Dim sh As Worksheet
+    Dim cell As Range
+    Dim FileCell As Range
+    Dim rng As Range
+ Dim strbody As String
+    With Application
+        .EnableEvents = False
+        .ScreenUpdating = False
+    End With
+    Dim reponse As Integer
+    Dim choice As String
+    Response = MsgBox(prompt:="Do you want to save as Draft?(if no , generated email will pop up in ur screen)", Buttons:=vbYesNo)
+        If Response = vbYes Then
+        choice = "yes"
+        Else
+        choice = "no"
+        End If
+Dim SenderName As String
+SubjectRaw = ActiveWorkbook.Name
+SenderName = (Environ$("Username"))
+Select Case SenderName
+   Case "F4375"
+       SenderName = "*****"
+   Case "86329"
+      SenderName = "*****"
+   Case "F5339"
+      SenderName = "*****"
+   Case "F2878"
+     SenderName = "*****"
+    Case "E6072"
+     SenderName = "*****"
+    Case "E9408"
+     SenderName = "*****"
+    Case "E7918"
+     SenderName = "*****"
+    Case "E9691"
+     SenderName = "*****"
+    Case "F1839"
+    SenderName = "*****"
+    Case "F5533"
+    SenderName = "*****"
+    Case "E9300"
+    SenderName = "*****"
+    Case "E8885"
+    SenderName = "*****"
+    Case Else
+    SenderName = ""
+     
+   End Select
+ActiveWorkbook.Sheets("EMAIL").Select
+    Set sh = Sheets("EMAIL")
+
+    Set OutApp = CreateObject("Outlook.Application")
+
+    For Each cell In sh.Columns("B").Cells.SpecialCells(xlCellTypeConstants)
+
+        'Enter the path/file names in the C:Z column in each row
+        Set rng = sh.Cells(cell.Row, 1).Range("C1:Z1")
+'purposely left date to be edited manually in vba ie. 15th March 2015, for safety purpose
+        If cell.Value Like "?*@?*.?*" And _
+           Application.WorksheetFunction.CountA(rng) > 0 Then
+                   strbody = "<font size=""3"" face=""Calibri"">" & _
+                  "To whom it may concern,<br><br>" & _
+                  "Attached is the request of confirmation of outstanding transaction as of 31st March 2015 . " & _
+                  "<br>" & _
+                  "Appreciate if you could kindly reply by 15th March 2015" & _
+                  "<br>" & _
+                  "<br><br>Regards," & _
+                  "<br> " & SenderName & _
+                  "<br>*****" & _
+                  "<br>*****</font>"
+            Set OutMail = OutApp.CreateItem(0)
+
+            With OutMail
+                .To = cell.Value
+                .CC = "*****@*****.com"
+                .Subject = cell.Offset(0, -1).Value & "- CONFIRMATION OF OUTSTANDING TRANSACTION "
+                .HTMLBody = strbody
+
+                For Each FileCell In rng.SpecialCells(xlCellTypeConstants)
+                    If Trim(FileCell) <> "" Then
+                        If Dir(FileCell.Value) <> "" Then
+                            .Attachments.Add FileCell.Value
+                        End If
+                    End If
+                Next FileCell
+If choice = "yes" Then
+                 .Save
+        .Close olPromtForSave
+                Else
+                .display
+                 
+        End If
+            End With
+
+            Set OutMail = Nothing
+        End If
+    Next cell
+
+    Set OutApp = Nothing
+    With Application
+        .EnableEvents = True
+        .ScreenUpdating = True
+    End With
+End Sub
+
+
