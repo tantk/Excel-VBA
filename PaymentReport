@@ -276,12 +276,12 @@ End If
 MyBAD:
 
       ' If an error occurs, display a message and end the macro.
-'      MsgBox "My friend, error occurs for many different reason." & vbNewLine _
- '     & Chr(149) & "one : save location has not been created." & vbNewLine _
-  '    & Chr(149) & "two : document header has been been filled up completely." & vbNewLine _
-   '    & Chr(149) & "three : the last line of the payment block release is not highlighted ." & vbNewLine _
-    '   & Chr(149) & "four : G5's is not due date?" & vbNewLine _
-     '  & Chr(149) & "and many other reason...."
+'      MsgBox " error occurs for several reason." & vbNewLine _
+ '     & Chr(149) & "one : save location has not been created. <- this will be automated in the future by using logic like:if does not exist , then create new folder with specified name " & vbNewLine _
+  '    & Chr(149) & "two : document header has not been been filled up completely, the blank in the last row item causes the variable to overflow, it can be fixed by adding another if statement to prvent while loop to read beyond last row" & vbNewLine _
+   '    & Chr(149) & "three : the last line of the payment block release is not highlighted . the logic work by finding the last highlighted item(it is a feature in SAP report), it can also be fixed by reading the last row item in excel directly and comparing with the last row highlighted item" & vbNewLine _
+    '   & Chr(149) & "four : cell G5's is not due date?" & vbNewLine _
+     '  & Chr(149) & "do let me know if you find other errors which is not due to the above 4 reason."
 
 
 
