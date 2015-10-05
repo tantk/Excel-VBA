@@ -58,7 +58,7 @@ Function GetFileList(FileSpec As String) As Variant
     Dim FileCount As Integer
     Dim FileName As String
 
-
+'change the below line to On Error GoTo NoFilesFound should error happen
     On Error GoTo NoFilesFoundSub
 
 
