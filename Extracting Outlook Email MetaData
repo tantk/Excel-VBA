@@ -1,0 +1,84 @@
+Sub GetMailInfo()
+'for other email properties, we can see https://msdn.microsoft.com/en-us/library/office/dn320330.aspx
+'before running this script, remember to enable all outlook reference library, in visual basic, go to tools -> reference, 
+'look for microsoft outlook and enable all relevant library, especially microsoft outlook 14.0
+'credit to http://www.mrexcel.com/forum/excel-questions/707690-extracting-outlook-messages-metadata-excel-spreadsheet.html
+
+    Dim MyOutlook As Outlook.Application
+    Dim msg As Outlook.MailItem
+    Dim x As Namespace
+    Dim Path As String
+    Dim i As Long
+
+
+    Set MyOutlook = New Outlook.Application
+    Set x = MyOutlook.GetNamespace("MAPI")
+    
+    Path = "E:\email backup\Up to end of may\"
+    FileList = GetFileList(Path + "*.msg")
+
+
+
+    Row = 1
+
+
+    While Row <= UBound(FileList)
+
+
+        Set msg = x.OpenSharedItem(Path + FileList(Row))
+
+
+        Cells(Row + 1, 1) = msg.Subject
+        Cells(Row + 1, 2) = msg.Sender
+        Cells(Row + 1, 3) = msg.CC
+        Cells(Row + 1, 4) = msg.To
+        Cells(Row + 1, 5) = msg.SentOn
+        If msg.Attachments.Count > 0 Then
+            For i = 1 To msg.Attachments.Count
+            On Error Resume Next
+                Cells(Row + 1, 5 + i) = msg.Attachments.Item(i).FileName
+            Next i
+        End If
+
+
+
+
+        Row = Row + 1
+    Wend
+
+
+End Sub
+Function GetFileList(FileSpec As String) As Variant
+'   Taken from http://spreadsheetpage.com/index.php/tip/getting_a_list_of_file_names_using_vba/
+'   Returns an array of filenames that match FileSpec
+'   If no matching files are found, it returns False
+
+
+    Dim FileArray() As Variant
+    Dim FileCount As Integer
+    Dim FileName As String
+
+
+    On Error GoTo NoFilesFoundSub
+
+
+    FileCount = 0
+    FileName = Dir(FileSpec)
+    If FileName = "" Then GoTo NoFilesFound
+
+
+'   Loop until no more matching files are found
+    Do While FileName <> ""
+        FileCount = FileCount + 1
+        ReDim Preserve FileArray(1 To FileCount)
+        FileArray(FileCount) = FileName
+        FileName = Dir()
+    Loop
+    GetFileList = FileArray
+    Exit Function
+
+
+'   Error handler
+NoFilesFound:
+        GetFileList = False
+End Function
