@@ -28,18 +28,19 @@ Sub GetMailInfo()
         Set msg = x.OpenSharedItem(Path + FileList(Row))
 
 
-        Cells(Row + 1, 1) = msg.Subject
-        Cells(Row + 1, 2) = msg.Sender
-        Cells(Row + 1, 3) = msg.CC
-        Cells(Row + 1, 4) = msg.To
-        Cells(Row + 1, 5) = msg.SentOn
-        If msg.Attachments.Count > 0 Then
-            For i = 1 To msg.Attachments.Count
-            On Error Resume Next
-                Cells(Row + 1, 5 + i) = msg.Attachments.Item(i).FileName
+            Cells(Row + 1, 1) = msg.Subject
+            Cells(Row + 1, 2) = msg.Sender
+            Cells(Row + 1, 3) = msg.CC
+            Cells(Row + 1, 4) = msg.To
+            Cells(Row + 1, 5) = msg.SentOn
+            Cells(Row + 1, 6) = msg.Body
+        
+            If msg.Attachments.Count > 0 Then
+                For i = 1 To msg.Attachments.Count
+                On Error Resume Next
+                    Cells(Row + 1, 7 + i) = msg.Attachments.Item(i).FileName
             Next i
         End If
-
 
 
 
