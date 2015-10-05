@@ -33,7 +33,9 @@ Sub GetMailInfo()
             Cells(Row + 1, 3) = msg.CC
             Cells(Row + 1, 4) = msg.To
             Cells(Row + 1, 5) = msg.SentOn
-            Cells(Row + 1, 6) = msg.Body
+            'the line belo causes programme take 5 times as long to run.it is recommended to use this line only if necessary
+            'remove ' below to enable extracting data from email body
+            'Cells(Row + 1, 6) = msg.Body
         
             If msg.Attachments.Count > 0 Then
                 For i = 1 To msg.Attachments.Count
