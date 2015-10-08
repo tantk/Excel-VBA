@@ -1,0 +1,57 @@
+Sub DeleteUnused()
+  
+
+Dim myLastRow As Long
+Dim myLastCol As Long
+Dim dummyRng As Range
+Set wks = ActiveWorkbook.ActiveSheet
+
+With wks
+    myLastRow = 0
+    myLastCol = 0
+    Set dummyRng = .UsedRange
+    On Error Resume Next
+    myLastRow = _
+      .Cells.Find("*", after:=.Cells(1), _
+        LookIn:=xlFormulas, lookat:=xlWhole, _
+        searchdirection:=xlPrevious, _
+        searchorder:=xlByRows).Row
+    myLastCol = _
+      .Cells.Find("*", after:=.Cells(1), _
+        LookIn:=xlFormulas, lookat:=xlWhole, _
+        searchdirection:=xlPrevious, _
+        searchorder:=xlByColumns).Column
+    On Error GoTo 0
+
+    If myLastRow * myLastCol = 0 Then
+        .Columns.Delete
+    Else
+        .Range(.Cells(myLastRow + 1, 1), _
+          .Cells(.Rows.Count, 1)).EntireRow.Delete
+        .Range(.Cells(1, myLastCol + 1), _
+          .Cells(1, .Columns.Count)).EntireColumn.Delete
+    End If
+  End With
+
+
+
+End Sub
+
+'================================
+Sub TestForMergedCells()
+
+  Dim AnyMerged As Variant
+
+  AnyMerged = ActiveSheet.UsedRange.MergeCells
+
+  If AnyMerged = False Then
+      MsgBox "no merged"
+  ElseIf AnyMerged = True Then
+      MsgBox "all merged"
+  ElseIf IsNull(AnyMerged) Then
+      MsgBox "mixture"
+  Else
+      MsgBox "never gets here--only 3 options"
+  End If
+
+End Sub
